@@ -1,52 +1,34 @@
-!pip install gradio groq
-
-import os
-import gradio as gr
+import streamlit as st
 from groq import Groq
-from google.colab import userdata
 
-# 1. Setup the Groq Client
-# Ensure you have added GROQ_API_KEY to your Colab Secrets
-client = Groq(api_key=userdata.get('GROQ_API_KEY'))
-client
-def chat_with_groq(message, history):
-    """
-    Handles the conversation logic.
-    'history' is passed automatically by Gradio and contains previous turns.
-    """
-    # Convert Gradio history format to Groq's message format
-    messages = [{"role": "system", "content": "You are a helpful and concise AI assistant."}]
+st.set_page_config("PragyanAI Content Generator", layout="wide")
+st.title("📢 PragyanAI – Content Generator")
 
-    for human, assistant in history:
-        messages.append({"role": "user", "content": human})
-        messages.append({"role": "assistant", "content": assistant})
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-    messages.append({"role": "user", "content": message})
+col1, col2 = st.columns(2)
 
-    # 2. Request Streaming Completion
-    # Using Llama 3.3 70B for high intelligence, or 8B for raw speed
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=messages,
-        temperature=0.7,
-        max_tokens=1024,
-        stream=True
-    )
+with col1:
+    product = st.text_input("Product")
+    audience = st.text_input("Audience")
 
-    partial_message = ""
-    for chunk in response:
-        if chunk.choices[0].delta.content is not None:
-            partial_message += chunk.choices[0].delta.content
-            yield partial_message
+    if st.button("Generate Content"):
+        prompt = f"Write marketing content for {product} targeting {audience}."
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        st.session_state.text = response.choices[0].message.content
 
-# 3. Create the Gradio Interface
-demo = gr.ChatInterface(
-    fn=chat_with_groq,
-    title="Groq Lightning Chat",
-    description="Experience sub-second responses using Groq LPUs.",
-    examples=["Explain quantum computing in one sentence.", "Write a Python script to scrape a website."],
-    theme="soft"
-)
+with col2:
+    if "text" in st.session_state:
+        content = st.text_area("Generated Content", st.session_state.text, height=300)
 
-if __name__ == "__main__":
-    demo.launch(share=True, debug=True)
+        st.download_button(
+            label="⬇️ Download as TXT",
+            data=content,
+            file_name="marketing_copy.txt",
+            mime="text/plain"
+        )
+    else:
+        st.info("Generate content first")
