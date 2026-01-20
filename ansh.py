@@ -4,7 +4,7 @@ from groq import Groq
 st.set_page_config("AnshAI Content Generator", layout="wide")
 
 st.sidebar.image("PIC.PNG", width=130)
-st.sidebar.title("📢 PragyanAI")
+st.sidebar.title("📢 AnshAI")
 st.sidebar.caption("AI Content Generator")
 
 
